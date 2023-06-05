@@ -7,6 +7,8 @@
     .byte $07           ; 8k CHR-RAM, no battery
     .byte $00, $00      ; NTSC, no special PPU
 
+.include "ram.s"
+
 .include "banks/bank0.s"
 .include "banks/bank1.s"
 .include "banks/bank2.s"
@@ -26,12 +28,12 @@
             ldx #$ff
             txs
             inx
-            stx $2000 ; Disable vblank
-            stx $2001 ; Disable rendering
+            stx PPUCTRL ; Disable vblank
+            stx PPUMASK ; Disable rendering
             stx $4010 ; Disable DMC IRQs
 
             : ; Wait for a vblank
-                bit $2002
+                bit PPUSTATUS
                 bpl :-
         
             : ; Wipe RAM
@@ -51,7 +53,7 @@
                 bne :-
 
             : ; Wait for another vblank
-                bit $2002
+                bit PPUSTATUS
                 bpl :-
 
             ; Switch to first bank
@@ -59,10 +61,39 @@
             jsr Bankswitch
 
             ; Load CHR-RAM
-            ; TODO
+            ; TODO make this a subroutine?
+            lda #>Graphics
+            sta zp1
+            lda #<Graphics
+            sta zp0
+
+            bit PPUSTATUS   ; Reset latch
+            lda #$00
+            sta PPUADDR     ; Set address in PPU to $0000
+            sta PPUADDR
+            ldx #$20        ; Copy $20 (32) pages
+            :
+                lda (zp0), y
+                sta PPUDATA
+                iny
+                bne :-
+
+                inc zp1     ; To next page
+                dex
+                bne :-      ; When zero pages are left, continue on
 
             ; Load palettes
-            ; TODO
+            ; TODO make this a subroutine?
+            bit PPUSTATUS
+            lda #$3f
+            sta PPUDATA
+            stx PPUDATA
+            :
+                lda Palettes, x
+                sta PPUDATA
+                inx
+                cpx #$20    ; Copy $20 (32) bytes
+                bne :-
 
             ; Initialize music
             ; TODO
@@ -74,24 +105,31 @@
             ; TODO
 
             ; Reset scroll
-            bit $2002
+            bit PPUSTATUS
             lda #$00
-            sta $2005
-            sta $2005
+            sta PPUSCROLL
+            sta PPUSCROLL
 
             ; Initialize game state
             ; TODO
 
             ; Enable vblank, PPU w/ right table as background, and 8x16 sprites
             lda #%10010000
-            sta $00 ; TODO set this up as PPUCTRL in zeropage
-            sta $2000
+            sta RAM_PPUCTRL
+            sta PPUCTRL
             lda #%00011110
-            sta $2001
+            sta PPUMASK
 
+        Logic:
             ; Infinite loop, for now
+            inc vblank_waiting
             :
-                jmp :-
+                lda vblank_waiting
+                bne :-
+
+            ; TODO frame logic goes here
+
+            jmp Logic
 
         NMI:
             ; Push all registers to the stack
@@ -104,7 +142,7 @@
             ; TODO time-sensitive NMI stuff
 
             ; Put current bank on the stack
-            lda $01 ; replace me from ZP
+            lda current_bank
             pha
 
             ; Sound/music step
@@ -120,10 +158,15 @@
             pla
             tax
             pla
+
+            ; vblank is done, unset flag so Logic can begin
+            lda #$00
+            sta vblank_waiting
+
             rti
 
         Bankswitch:
-            sty $01 ; TODO set this up as current bank in ZP
+            sty current_bank
             lda Banktable, y
             sta Banktable, y
             rts
