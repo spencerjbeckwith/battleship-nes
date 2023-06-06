@@ -20,16 +20,26 @@
     ; Other ZP variables
     current_bank: .res 1
     vblank_waiting: .res 1
+    oam_position: .res 1
+    ppu_buffer_length: .res 1
     RAM_PPUCTRL: .res 1
     RAM_PPUMASK: .res 1
     
 .segment "RAM"
-    ; Non-ZP memory reservations go here
+    .org $0700
+        ; Reserve a page for queued writes to the PPU
+        ppu_buffer_addr: .res 256
+
+    .reloc
 
 ; Constants
 PPUCTRL = $2000
 PPUMASK = $2001
 PPUSTATUS = $2002
+OAMADDR = $2003
+OAMDATA = $2004
 PPUSCROLL = $2005
 PPUADDR = $2006
 PPUDATA = $2007
+
+OAMDMA = $4014
