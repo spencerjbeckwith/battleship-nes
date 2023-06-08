@@ -68,7 +68,10 @@
             sta PPUCTRL
             lda #%00011110
             sta PPUMASK
-            
+
+            lda #$00
+            sta palette_timer
+
             rts
 
         Placement:
@@ -113,8 +116,19 @@
             rts
 
         Title:
+            lda #<TitlePaletteShift
+            sta zp0
+            lda #>TitlePaletteShift
+            sta zp1
+            jsr PaletteIncrement
             rts
             
+            TitlePaletteShift:
+                .byte $0d, $0d, $0d, $0c
+                .byte $0d, $0d, $0c, $0c
+                .byte $0d, $0c, $0c, $21
+                .byte $0d, $0c, $21, $20
+
         Placement:
             rts
             
@@ -125,6 +139,68 @@
             rts
 
         GameOver:
+            rts
+
+        ; Common routines for ecah state
+        PaletteIncrement:
+            ; This will increment four palettes over 32 frames according to the provided little-endian address.
+            ; zp0: palette table low byte
+            ; zp1: palette table high byte
+            ; For this routine to take affect, you must set palette_timer to $00.
+            ; For best results, coordinate your shifted colors for a smooth transition
+
+            ; Issue with this: only works for the first palette. How can we make this work for multiple palettes in the 3fxx PPU range?
+
+            ; Exit subroutine early if our timer is at the max
+            lda palette_timer
+            cmp #$20
+            bcc :+
+                rts
+            :
+
+            ldx #$00
+            lda palette_step
+            asl
+            asl ; x4
+            tay
+
+            inc palette_timer
+            lda palette_timer
+            and #%00000111
+            cmp #%00000111
+            bne :++
+
+                ; TODO make this a macro or subroutine?
+                ; This is a fairly unintuitive routine
+
+                ldx ppu_buffer_length
+                lda #$3f
+                sta ppu_buffer_addr, x
+                inx
+
+                lda #$00 ; <-- change me to start at a different palette
+                sta ppu_buffer_addr, x
+                inx
+
+                sta ppu_buffer_addr, x
+                inx
+
+                lda #$04 ; Only write four bytes into the buffer - change me for more
+                sta ppu_buffer_addr, x
+                sta zp2
+                inx
+
+                ; Write the bytes from our table
+                :
+                    lda (zp0), y
+                    sta ppu_buffer_addr, x
+                    inx
+                    iny
+                    dec zp2
+                    bne :-
+                inc palette_step
+            :
+
             rts
 
     .endscope

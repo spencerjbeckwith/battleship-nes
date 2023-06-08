@@ -8,7 +8,7 @@
         .incbin "build/title.chr"
 
     Palettes:
-        .byte $0d, $0c, $21, $20
+        .byte $0d, $0d, $0d, $0d
         .byte $1d, $07, $26, $20
         .byte $1d, $07, $26, $20
         .byte $1d, $07, $26, $20

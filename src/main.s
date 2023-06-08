@@ -272,6 +272,12 @@
                 bne @parse_buffer
             @skip_buffer:
 
+            ; Keep scroll at 0
+            bit PPUSTATUS
+            lda #$00
+            sta PPUSCROLL
+            sta PPUSCROLL
+
             ; Update PPUCTRL from RAM
             lda RAM_PPUCTRL
             ora #%10000000 ; But keep NMI on
