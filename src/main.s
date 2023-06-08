@@ -115,10 +115,11 @@
             sta oam_position
 
             ; Initialize game state
-            ; TODO
+            lda #STATE_TITLE
+            sta state
 
-            ; Enable vblank, PPU w/ right table as background, and 8x16 sprites
-            lda #%10010000
+            ; Enable vblank
+            lda #%10000000
             sta RAM_PPUCTRL
             sta PPUCTRL
             lda #%00011110
@@ -131,9 +132,66 @@
                 lda vblank_waiting
                 bne :-
 
-            ; TODO frame logic goes here
+            ; TODO read input here
 
-            jmp Logic
+            ; Run the state machine (in bank 1)
+            ldy #$01
+            jsr Bankswitch
+
+            ; This works by pushing several pointers into the stack
+            ; so that these functions can rts directly to one another.
+
+            ; StateCleanup -> StateInit -> State -> Logic
+            ; To rts in the right order, these must be pushed onto the stack in reverse.
+
+            ; "Exit" point is our Logic loop
+            lda #>Logic
+            pha
+            lda #<Logic-1
+            pha
+
+            ; Push current state to stack
+            lda state
+            asl
+            tax ; Multiply state by 2 (as our addresses are 16-bit)
+            lda StateTable+1, x
+            pha
+            lda StateTable, x
+            sec
+            sbc #$01
+            pha
+
+            ; If state has changed from the last frame:
+            lda state
+            cmp state_prev
+            beq :+
+
+                ; Push init from the new state to stack
+                asl
+                tax
+                lda StateInitTable+1, x
+                pha
+                lda StateInitTable, x
+                sec
+                sbc #$01
+                pha
+
+                ; Push cleanup from last state to stack
+                lda state_prev
+                asl
+                tax
+                lda StateCleanupTable+1, x
+                pha
+                lda StateCleanupTable, x
+                sec
+                sbc #$01
+                pha
+            :
+            
+            ; Launch our rts chain
+            lda state
+            sta state_prev
+            rts
 
         NMI:
             ; Push all registers to the stack
@@ -279,6 +337,30 @@
 
             Banktable:
                 .byte $00, $01, $02, $03, $04, $05, $06
+
+        StateInitTable:
+            .word StateInit::Boot
+            .word StateInit::Title
+            .word StateInit::Placement
+            .word StateInit::Shot
+            .word StateInit::Cutscene
+            .word StateInit::GameOver
+
+        StateCleanupTable:
+            .word StateCleanup::Boot
+            .word StateCleanup::Title
+            .word StateCleanup::Placement
+            .word StateCleanup::Shot
+            .word StateCleanup::Cutscene
+            .word StateCleanup::GameOver
+
+        StateTable:
+            .word State::Boot
+            .word State::Title
+            .word State::Placement
+            .word State::Shot
+            .word State::Cutscene
+            .word State::GameOver
 
     .endscope
 

@@ -25,6 +25,9 @@
     RAM_PPUCTRL: .res 1
     RAM_PPUMASK: .res 1
     
+    state: .res 1
+    state_prev: .res 1
+    
 .segment "RAM"
     .org $0700
         ; Reserve a page for queued writes to the PPU
