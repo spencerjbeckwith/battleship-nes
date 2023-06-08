@@ -86,8 +86,8 @@
             ; TODO make this a subroutine?
             bit PPUSTATUS
             lda #$3f
-            sta PPUDATA
-            stx PPUDATA
+            sta PPUADDR
+            stx PPUADDR
             :
                 lda Palettes, x
                 sta PPUDATA

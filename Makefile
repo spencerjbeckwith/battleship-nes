@@ -9,7 +9,10 @@ default: $(OUTPUT)
 build:
 	mkdir -p build
 
-build/main.o: build src/*.s src/**/*.s
+build/title.chr: build asset/title.png
+	neschr -i asset/title.png -o build/title.chr
+
+build/main.o: src/*.s src/**/*.s build/title.chr
 	$(ASSEMBLER) $(ASSEMBLER_FLAGS) src/main.s -o build/main.o
 
 $(OUTPUT): build/main.o

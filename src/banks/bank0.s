@@ -1,5 +1,14 @@
 .segment "BANK0"
     Graphics:
-        ; .incbin ...
+        .incbin "build/title.chr"
+
     Palettes:
-        ; .incbin ...
+        .byte $1d, $07, $26, $20
+        .byte $1d, $07, $26, $20
+        .byte $1d, $07, $26, $20
+        .byte $1d, $07, $26, $20
+
+        .byte $1d, $07, $26, $20
+        .byte $1d, $07, $26, $20
+        .byte $1d, $07, $26, $20
+        .byte $1d, $07, $26, $20
