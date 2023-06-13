@@ -64,7 +64,7 @@
         ldx ppu_buffer_length
         sta ppu_buffer_addr, x
         inx
-        sta ppu_buffer_length
+        stx ppu_buffer_length
         rts
 
     ; Subroutine that writes multiple bytes (from a label in memory) to the PPU buffer
@@ -82,6 +82,51 @@
             cpy zp2
             bne @MultiLoop
         stx ppu_buffer_length
+        rts
+
+    ; Directly initializes drawing directly to the PPU stored in low-endian zp0 and zp1.
+    ; This should only be called when rendering is enabled - otherwise write to the PPU buffer instead.
+    InitDirect:
+        bit PPUSTATUS
+        lda zp1
+        sta PPUADDR
+        lda zp0
+        sta PPUADDR
+        rts
+
+    ; Directly writes multiple bytes to the PPU from the address stored in low-endian zp0 and zp1.
+    ; zp2 should contain the number of bytes to write.
+    ; This should only be called when rendering is enabled - otherwise write to the PPU buffer instead.
+    MultiDirect:
+        ldy #$00
+        @MultiDirectLoop:
+            lda (zp0), y
+            sta PPUDATA
+            iny
+            cpy zp2
+            bne @MultiDirectLoop
+        rts
+
+    ; Disables PPU rendering
+    ; Use this if you have a chonky write you need to make.
+    ; Don't forget to call PPUB::EnableRendering afterwards!
+    DisableRendering:
+        lda #$00
+        sta PPUCTRL
+        sta PPUMASK
+        sta zp0
+        rts
+
+    ; Enables PPU rendering
+    EnableRendering:
+        bit PPUSTATUS
+        lda #$00
+        sta PPUSCROLL
+        sta PPUSCROLL
+        lda #%10000000
+        sta PPUCTRL
+        lda #%00011110
+        sta PPUMASK
         rts
 
 .endscope

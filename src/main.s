@@ -216,7 +216,7 @@
             ; Flags byte format:
             ; 7 6 5 4 3 2 1 0
             ; | | | | | | | +-- repeat. If 1, the first and only data byte will be written (length) times instead of writing (length) bytes from the buffer
-            ; | | | | | | +---- unused
+            ; | | | | | | +---- increment. If repeat is also 1, every write will increment the value being written by 1
             ; | | | | | +------ vertical placement property. If 1, writes occur vertically in the PPU (increment by a $20 instead of $01)
             lda ppu_buffer_addr+1
             beq @skip_buffer    ; Skip buffer if first entry is 0, meaning no changes were made
@@ -242,27 +242,45 @@
 
                     ; Get repeating property
                     lda ppu_buffer_addr+2, x
-                    and #%00000001
-                    cmp #%00000001
+                    and #$01
+                    cmp #$01
                     bne @standard_buffer_loop
+
+                    ; Get incrementing property
+                    lda ppu_buffer_addr+2, x
+                    and #$02
+                    cmp #$02
+                    beq @increment_buffer_start
 
                     ; We are repeating - load the byte only once
                     lda ppu_buffer_addr+4, x
                     jmp @repeat_buffer_loop
 
                 @standard_buffer_loop:
-                    lda ppu_buffer_addr+4, x     ; Load next byte
+                    lda ppu_buffer_addr+4, x        ; Load next byte
                     sta PPUDATA                     ; Write it
                     inx                             ; Increase to next tile
                     dey                             ; Decrement tiles remaining
                     bne @standard_buffer_loop       ; Repeat until Y = 0
-                    jmp @buffer_write_done           ; Skip over repeat loop
+                    jmp @buffer_write_done          ; Skip over repeat loop
 
                 @repeat_buffer_loop:
                     sta PPUDATA                     ; Write byte (already loaded in A)
                     dey                             ; Decrement tiles remaining
                     bne @repeat_buffer_loop         ; Repeat until Y = 0
                     inx                             ; Increase buffer position just once after this write is done
+                    jmp @buffer_write_done
+
+                @increment_buffer_start:
+                    lda ppu_buffer_addr+4, x
+                    clc
+
+                @increment_buffer_loop:
+                    sta PPUDATA
+                    adc #$01
+                    dey
+                    bne @increment_buffer_loop
+                    inx
 
                 @buffer_write_done:
                     ; Add length of our buffer data for next increment
