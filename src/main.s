@@ -9,6 +9,9 @@
 
 .include "ram.s"
 
+.rodata
+    .include "ppub.s"
+
 .include "banks/bank0.s"
 .include "banks/bank1.s"
 .include "banks/bank2.s"
@@ -215,16 +218,17 @@
             ; | | | | | | | +-- repeat. If 1, the first and only data byte will be written (length) times instead of writing (length) bytes from the buffer
             ; | | | | | | +---- unused
             ; | | | | | +------ vertical placement property. If 1, writes occur vertically in the PPU (increment by a $20 instead of $01)
-            lda ppu_buffer_addr
+            lda ppu_buffer_addr+1
             beq @skip_buffer    ; Skip buffer if first entry is 0, meaning no changes were made
                 ldx #$00        ; X will track position in the buffer
                 @parse_buffer:
 
                     ; Reset latch and set our target address in the PPU
+                    ; Note that the bytes should be high-endian, but the buffer is low-endian (for abstracted consistency)
                     bit PPUSTATUS
-                    lda ppu_buffer_addr, x
-                    sta PPUADDR
                     lda ppu_buffer_addr+1, x
+                    sta PPUADDR
+                    lda ppu_buffer_addr, x
                     sta PPUADDR
 
                     ; Get length
