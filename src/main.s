@@ -11,6 +11,7 @@
 
 .rodata
     .include "ppub.s"
+    .include "input.s"
 
 .include "banks/bank0.s"
 .include "banks/bank1.s"
@@ -99,12 +100,6 @@
             ; Initialize music
             ; TODO
 
-            ; Initialize nametables
-            ; TODO
-
-            ; Initialize attributes
-            ; TODO
-
             ; Reset scroll
             bit PPUSTATUS
             lda #$00
@@ -133,7 +128,8 @@
                 lda vblank_waiting
                 bne :-
 
-            ; TODO read input here
+            ; Read inputs
+            jsr Input::Read
 
             ; Run the state machine (in bank 1)
             ldy #$01

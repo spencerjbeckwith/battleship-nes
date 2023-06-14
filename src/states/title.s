@@ -33,6 +33,40 @@ bcs @EndPaletteIncrement
         inc palette_step
     @EndPaletteIncrement:
 
+; If P1 presses enter, swap our game mode
+ldx #$00
+InputIsPressed BUTTON_SELECT
+bne @AfterSelect
+    inc game_mode ; Only last bit is significant so we can inc it forever
+
+    ; See if we are in game mode 0 or 1 and recolor 1P and 2P labels appropriately
+    lda game_mode
+    and #$01
+    cmp #$01
+    beq @GameMode1
+        ; For game mode 0 - p1 is highlighted, p2 is gray
+        PPUBInitM $23db, #$01, #$02
+        lda #$00
+        jsr PPUB::Byte
+
+        PPUBInitM $23e3, #$01, #$02
+        lda #$55
+        jsr PPUB::Byte
+
+        jmp @AfterSelect
+
+    @GameMode1:
+        ; For game mode 1 - p1 is gray, p2 is highlighted
+        PPUBInitM $23db, #$01, #$02
+        lda #$55
+        jsr PPUB::Byte
+
+        PPUBInitM $23e3, #$01, #$02
+        lda #$00
+        jsr PPUB::Byte
+        
+@AfterSelect:
+
 rts
 TitlePaletteShift:
     .byte $0d, $0d, $0d, $0c

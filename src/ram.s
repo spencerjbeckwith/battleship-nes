@@ -25,8 +25,15 @@
     RAM_PPUCTRL: .res 1
     RAM_PPUMASK: .res 1
 
+    ; Each input variable is 2 bytes - first being for P1, second for P2
+    inputs_pressed: .res 2
+    inputs_held: .res 2
+    inputs_released: .res 2
+    inputs_previous: .res 2
+
     state: .res 1
     state_prev: .res 1
+    game_mode: .res 1
     
 .segment "RAM"
 
@@ -80,3 +87,13 @@ PPUADDR = $2006
 PPUDATA = $2007
 
 OAMDMA = $4014
+
+; Buttons
+BUTTON_RIGHT    = $01
+BUTTON_LEFT     = $02
+BUTTON_DOWN     = $04
+BUTTON_UP       = $08
+BUTTON_START    = $10
+BUTTON_SELECT   = $20
+BUTTON_B        = $40
+BUTTON_A        = $80

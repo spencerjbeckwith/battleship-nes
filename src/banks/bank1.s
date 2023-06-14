@@ -52,6 +52,20 @@
                 cpy #$00
                 bne :--
 
+            ; Write 1P and 2P selections
+            PPUBInitMultiDirectM $21cc, #$08, OnePlayer
+            PPUBInitMultiDirectM $222c, #$08, TwoPlayer
+
+            ; Begin 2P gray (palette 01)
+            lda #$e3
+            sta zp0
+            lda #$23
+            sta zp1
+            jsr PPUB::InitDirect
+            lda #$55
+            sta PPUDATA
+            sta PPUDATA
+
             ; Write strings to bottom of the screen
             PPUBInitMultiDirectM $230c, #$08, NameAndYear
             PPUBInitMultiDirectM $2342, #$1c, Github1
@@ -67,6 +81,8 @@
 
             rts
 
+        OnePlayer: .byte "1 PLAYER"
+        TwoPlayer: .byte "2 PLAYER"
         NameAndYear: .byte "SJB 2O23"
         Github1: .byte "GITHUB.COM/SPENCERJBECKWITH/"
         Github2: .byte "BATTLESHIP-NES"

@@ -102,6 +102,7 @@
 
     ; Directly initializes drawing directly to the PPU stored in low-endian zp0 and zp1.
     ; This should only be called when rendering is enabled - otherwise write to the PPU buffer instead.
+    ; This should be used in conjunction to writes to PPUDATA.
     InitDirect:
         bit PPUSTATUS
         lda zp1
