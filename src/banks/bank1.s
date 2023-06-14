@@ -25,7 +25,7 @@
             jsr PPUB::DisableRendering
 
             ; Start at $2084
-            lda #$00
+            lda #$5a
             sta zp2
             ldy #$06 ; 6 rows for the title
             lda #$a8
@@ -52,6 +52,12 @@
                 cpy #$00
                 bne :--
 
+            ; Write strings to bottom of the screen
+            PPUBInitMultiDirectM $230c, #$08, NameAndYear
+            PPUBInitMultiDirectM $2342, #$1c, Github1
+            PPUBInitMultiDirectM $2369, #$0e, Github2
+            PPUBInitMultiDirectM $23f0, #$08, Attributes
+
             ; Re-enable drawing
             jsr PPUB::EnableRendering
 
@@ -60,6 +66,14 @@
             sta palette_timer
 
             rts
+
+        NameAndYear: .byte "SJB 2O23"
+        Github1: .byte "GITHUB.COM/SPENCERJBECKWITH/"
+        Github2: .byte "BATTLESHIP-NES"
+        Attributes:
+            .repeat 8
+                .byte $55 ; %01010101 -> palette 1 for all the notice text
+            .endrep
 
         Placement:
             rts

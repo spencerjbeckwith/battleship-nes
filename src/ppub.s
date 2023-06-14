@@ -36,6 +36,22 @@
         PPUBMultiM label, length
     .endmacro
 
+    ; Macro for writing strings of data directly to the PPU
+    .macro PPUBInitMultiDirectM addr, length, label
+        lda #<addr
+        sta zp0
+        lda #>addr
+        sta zp1
+        jsr PPUB::InitDirect
+        lda #<label
+        sta zp0
+        lda #>label
+        sta zp1
+        lda length
+        sta zp2
+        jsr PPUB::MultiDirect
+    .endmacro
+
     ; Subroutine that initializes a new entry to the PPU buffer
     ; You must use PPUB::Byte or PPUB:Multi to fill this entry.
     ; zp0 - low byte of PPU address to write to

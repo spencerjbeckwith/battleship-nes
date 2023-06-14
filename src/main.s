@@ -64,10 +64,9 @@
             jsr Bankswitch
 
             ; Load CHR-RAM
-            ; TODO make this a subroutine?
-            lda #>Graphics
+            lda #>Graphics::Start
             sta zp1
-            lda #<Graphics
+            lda #<Graphics::Start
             sta zp0
 
             bit PPUSTATUS   ; Reset latch
@@ -86,13 +85,12 @@
                 bne :-      ; When zero pages are left, continue on
 
             ; Load palettes
-            ; TODO make this a subroutine?
             bit PPUSTATUS
             lda #$3f
             sta PPUADDR
             stx PPUADDR
             :
-                lda Palettes, x
+                lda Graphics::Palettes, x
                 sta PPUDATA
                 inx
                 cpx #$20    ; Copy $20 (32) bytes

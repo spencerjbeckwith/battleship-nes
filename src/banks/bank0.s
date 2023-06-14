@@ -1,19 +1,28 @@
 .segment "BANK0" ; Graphics data
-    Graphics:
+    .scope Graphics
 
-        ; Tile 0 should be blank
-        .byte $00, $00, $00, $00, $00, $00, $00, $00
-        .byte $00, $00, $00, $00, $00, $00, $00, $00
+        Start:
 
-        .incbin "build/title.chr"
+        ; First 32 tiles should be blank (to allow ASCII characters to align)
+        .repeat $20
+            .incbin "build/blank.chr"
+        .endrep
 
-    Palettes:
-        .byte $0d, $0d, $0d, $0d
-        .byte $1d, $07, $26, $20
-        .byte $1d, $07, $26, $20
-        .byte $1d, $07, $26, $20
+        ASCII:
+            .incbin "build/blank.chr" ; ASCII $20 is space (blank tile)
+            .incbin "build/ascii.chr"
 
-        .byte $1d, $07, $26, $20
-        .byte $1d, $07, $26, $20
-        .byte $1d, $07, $26, $20
-        .byte $1d, $07, $26, $20
+        Title:
+            .incbin "build/title.chr"
+
+        Palettes:
+            .byte $0d, $0d, $0d, $0d
+            .byte $1d, $0c, $00, $20
+            .byte $1d, $07, $26, $20
+            .byte $1d, $07, $26, $20
+
+            .byte $1d, $07, $26, $20
+            .byte $1d, $07, $26, $20
+            .byte $1d, $07, $26, $20
+            .byte $1d, $07, $26, $20
+    .endscope
