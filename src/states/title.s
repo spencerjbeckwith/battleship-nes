@@ -36,8 +36,15 @@ bcs @EndPaletteIncrement
 ; If P1 presses enter, swap our game mode
 ldx #$00
 InputIsPressed BUTTON_SELECT
-bne @AfterSelect
+beq :+
+    jmp @AfterSelect
+:
     inc game_mode ; Only last bit is significant so we can inc it forever
+
+    ; Play select sound
+    lda #SND_SELECT
+    ldx #$00
+    CallFromBank #$02, famistudio_sfx_play
 
     ; See if we are in game mode 0 or 1 and recolor 1P and 2P labels appropriately
     lda game_mode

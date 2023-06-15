@@ -13,6 +13,81 @@
     .include "ppub.s"
     .include "input.s"
 
+    ; You MUST use this macro when calling a subroutine from another bank if the PC is currently below $C000.
+    ; Example usage:
+    ;   lda #SND_SELECT
+    ;   ldx #$00
+    ;   CallFromBank #$02, famistudio_sfx_play ; FamiStudio is in bank 2
+
+    .macro CallFromBank bank, subroutine
+    
+        ; Hacky-shit explanation:
+        ; I made the mistake of putting program code in the banks, which means if we want to call code for
+        ; one bank from another (primary example being playing sounds and music) you MUST use this macro.
+        ; If you JSR directly, or switch banks before your JSR, you'll almost certainly crash. You must switch banks
+        ; while the PC is >$C000 or you're ripping out the bank from underneath yourself and changing your next instructions.
+
+        ; This macro handles the necessary bank switches before and after the subroutine from a separate bank you're trying to call.
+        ; It also preserves your registers and zp going in - so it is as if you called a bank directly from another.
+        ; A better solution for sounds is a "sound-queue" we'd handle in the NMI, but this macro will work for any and all bank-specific code.
+
+        ; Save registers in RAM
+        sta reserved
+        stx reserved+1
+        sty reserved+2
+
+        lda #>subroutine
+        sta reserved+3
+        lda #<subroutine-1
+        sta reserved+4
+        lda bank
+        sta reserved+5
+        jsr _CallFromBank
+    .endmacro
+
+    ; Call to switch banks.
+    ; Y should be set to the bank index you want to switch to. Must be $00-$06.
+    Bankswitch:
+        sty current_bank
+        lda Banktable, y
+        sta Banktable, y
+        rts
+
+        Banktable:
+            .byte $00, $01, $02, $03, $04, $05, $06
+
+    _CallFromBank:
+        ; Save the old and switch the current bank
+        lda current_bank
+        pha
+        ldy reserved+5
+        jsr Bankswitch
+        
+        ; Push "exit" address from subroutine (>$C000)
+        lda #>_ReturnFromBank
+        pha
+        lda #<_ReturnFromBank-1
+        pha
+
+        ; Push "return" of the subroutine we set (<$C000, after bank is switched back)
+        lda reserved+3
+        pha
+        lda reserved+4
+        pha
+
+        ; Re-load registers going into the subroutine
+        lda reserved
+        ldx reserved+1
+        ldy reserved+2
+        rts
+
+    _ReturnFromBank:
+        ; Switch back to our old bank
+        pla
+        tay
+        jsr Bankswitch
+        rts
+
 .include "banks/bank0.s"
 .include "banks/bank1.s"
 .include "banks/bank2.s"
@@ -97,8 +172,16 @@
                 cpx #$20    ; Copy $20 (32) bytes
                 bne :-
 
-            ; Initialize music
-            ; TODO
+            ; Initialize music and sound
+            ldy #$02
+            jsr Bankswitch  ; Sound data is in bank 2
+            lda #$01        ; Non-PAL
+            ldx #<MusicData
+            ldy #>MusicData
+            jsr famistudio_init
+            ldx #<SoundData
+            ldy #>SoundData
+            jsr famistudio_sfx_init
 
             ; Reset scroll
             bit PPUSTATUS
@@ -140,6 +223,7 @@
 
             ; StateCleanup -> StateInit -> State -> Logic
             ; To rts in the right order, these must be pushed onto the stack in reverse.
+            ; Call me the rts trickster 😎 maybe I should change my username to rtstrickstr...
 
             ; "Exit" point is our Logic loop
             lda #>Logic
@@ -332,6 +416,9 @@
             pha
 
             ; Sound/music step
+            ldy #$02
+            jsr Bankswitch
+            jsr famistudio_update
 
             ; Return to old bank
             pla
@@ -350,15 +437,6 @@
             sta vblank_waiting
 
             rti
-
-        Bankswitch:
-            sty current_bank
-            lda Banktable, y
-            sta Banktable, y
-            rts
-
-            Banktable:
-                .byte $00, $01, $02, $03, $04, $05, $06
 
         StateInitTable:
             .word StateInit::Boot

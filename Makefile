@@ -1,3 +1,9 @@
+# `make` - build ROM
+# `make clean` - cleanup build
+# If `make` is failing, change these params to the appropriate programs on your system
+
+NESCHR = neschr
+FAMISTUDIO = famistudio
 ASSEMBLER = ca65
 ASSEMBLER_FLAGS = -t nes
 LINKER = ld65
@@ -10,15 +16,18 @@ build:
 	mkdir -p build
 
 build/title.chr: build asset/title.png
-	neschr -i asset/title.png -o build/title.chr
+	$(NESCHR) -i asset/title.png -o build/title.chr
 
 build/ascii.chr: build asset/ascii.gif
-	neschr -i asset/ascii.gif -o build/ascii.chr
+	$(NESCHR) -i asset/ascii.gif -o build/ascii.chr
 
 build/blank.chr: build asset/blank.png
-	neschr -i asset/blank.png -o build/blank.chr
+	$(NESCHR) -i asset/blank.png -o build/blank.chr
 
-build/main.o: src/*.s src/**/*.s build/title.chr build/ascii.chr build/blank.chr
+build/sfx.s: build asset/sfx.fms
+	$(FAMISTUDIO) asset/sfx.fms famistudio-asm-sfx-export build/sfx.s -famistudio-asm-format:ca65
+
+build/main.o: src/*.s src/**/*.s build/title.chr build/ascii.chr build/blank.chr build/sfx.s
 	$(ASSEMBLER) $(ASSEMBLER_FLAGS) src/main.s -o build/main.o
 
 $(OUTPUT): build/main.o

@@ -44,6 +44,7 @@
     .org $0500
         palette_timer: .res 1
         palette_step: .res 1
+        reserved: .res 6 ; used for bankswitch magic
 
     .org $0700
         ; Reserve a page for queued writes to the PPU
