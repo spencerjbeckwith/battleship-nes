@@ -25,7 +25,7 @@ To build the ROM, you will need the following tools installed and available in y
     - Now make this script executable:
       - `sudo chmod +x /usr/bin/famistudio`
     - Verify it worked by running `famistudio -?`
-    - And if you _really_ wanna be a cool kid - create `/usr/share/applicatoins/famistudio.desktop` so you can open `.fms` files through your file system:
+    - And if you _really_ wanna be a cool kid - create `/usr/share/applications/famistudio.desktop` so you can open `.fms` files through your file system:
 
         ```desktop
         [Desktop Entry]
