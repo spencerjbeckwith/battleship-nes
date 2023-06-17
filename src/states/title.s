@@ -39,6 +39,12 @@ InputIsPressed BUTTON_SELECT
 beq :+
     jmp @AfterSelect
 :
+    ; Make sure we haven't already pressed start, by checking first event in queue directly...
+    lda events+1
+    beq :+
+        jmp @AfterSelect
+    :
+
     inc game_mode ; Only last bit is significant so we can inc it forever
 
     ; Play select sound
@@ -74,9 +80,43 @@ beq :+
         
 @AfterSelect:
 
+; If P1 presses start, begin the game
+ldx #$00
+InputIsPressed BUTTON_START
+bne @AfterStart
+
+    ; Make sure we haven't already pressed start
+    lda events+1
+    bne @AfterStart
+
+    ; Play start sound
+    lda #SND_START
+    ldx #$00
+    CallFromBank #$02, famistudio_sfx_play
+
+    ; Queue our events
+    QueueEvent #$01, #$f0, StartGame
+
+@AfterStart:
+
 rts
 TitlePaletteShift:
     .byte $0d, $0d, $0d, $0c
     .byte $0d, $0d, $0c, $0c
     .byte $0d, $0c, $0c, $21
     .byte $0d, $0c, $21, $20
+
+StartGame:
+    lda #SND_SPLASH
+    ldx #$00
+    CallFromBank #$02, famistudio_sfx_play
+
+    ; Restrict game mode between 0 (1p) and 1 (2p)
+    lda game_mode
+    and #$01
+    sta game_mode
+
+    lda #STATE_PLACEMENT
+    sta state
+
+    rts

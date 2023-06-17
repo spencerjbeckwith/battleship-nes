@@ -111,6 +111,7 @@
             rts
 
         Title:
+            jsr PPUB::Wipe
             rts
 
         Placement:

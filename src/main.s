@@ -45,6 +45,21 @@
         jsr _CallFromBank
     .endmacro
 
+    ; Queues an event to be called from a bank, after the specified number of frames have occured.
+    ; Example usage:
+    ; QueueEvent #$01, #$20, BeginGame
+    .macro QueueEvent bank, frames, subroutine
+        lda bank
+        sta zp0
+        lda frames
+        sta zp1
+        lda #<subroutine
+        sta zp2
+        lda #>subroutine
+        sta zp3
+        jsr _QueueEvent
+    .endmacro
+
     ; Call to switch banks.
     ; Y should be set to the bank index you want to switch to. Must be $00-$06.
     Bankswitch:
@@ -87,6 +102,30 @@
         tay
         jsr Bankswitch
         rts
+
+    _QueueEvent:
+        ; Put event in our next unused event spot
+        ldx #$00
+        @AttemptEventSlot:
+            lda events+1, x
+            bne @EventSlotOccupied
+
+            lda zp0
+            sta events, x
+            lda zp1
+            sta events+1, x
+            lda zp2
+            sta events+2, x
+            lda zp3
+            sta events+3, x
+            rts
+
+        @EventSlotOccupied:
+            inx
+            inx
+            inx
+            inx
+            jmp @AttemptEventSlot
 
 .include "banks/bank0.s"
 .include "banks/bank1.s"
@@ -213,6 +252,71 @@
 
             ; Read inputs
             jsr Input::Read
+
+            ; Execute queued events
+            ldx #$00
+            ldy #$00
+            @NextEvent:
+                lda events+1, x
+                beq @ToNextEvent
+
+                    ; Decrement frames left
+                    sec
+                    sbc #$01
+                    sta events+1, x
+
+                    ; Are we at zero now?
+                    cmp #$00
+                    bne @ToNextEvent
+
+                        ; Yes, we are at zero. Execute the event
+                        ; Preserve registers for the rest of the loop
+                        tya
+                        pha
+                        txa
+                        pha
+
+                        ; Switch to the right bank
+                        ldy events, x
+                        jsr Bankswitch
+
+                        ; Push exit address to stack
+                        lda #>@EventOver
+                        pha
+                        lda #<@EventOver-1
+                        pha
+
+                        ; Push routine address to stack
+                        lda events+3, x ; High byte first...
+                        pha
+                        lda events+2, x ; Low byte minus 1
+                        sec
+                        sbc #$01
+                        pha
+                        rts
+
+                    @EventOver:
+
+                        ; Restore registers and move on
+                        pla
+                        tax
+                        pla
+                        tay
+
+                @ToNextEvent:
+                    ; Are we done with our queue yet?
+                    iny
+                    cpy #EVENT_COUNT
+                    beq @AllEventsDone
+
+                    ; We have events left
+                    inx
+                    inx
+                    inx
+                    inx
+                    jmp @NextEvent
+
+            @AllEventsDone:
 
             ; Run the state machine (in bank 1)
             ldy #$01

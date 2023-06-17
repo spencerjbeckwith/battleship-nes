@@ -146,4 +146,39 @@
         sta PPUMASK
         rts
 
+    ; Clears all tiles and attributes out of the nametable
+    Wipe:
+        jsr DisableRendering
+        bit PPUSTATUS
+        lda #$20
+        sta PPUADDR
+        lda #$00
+        stx PPUADDR
+        ldx #$00
+        ldy #$00
+        @NextY:
+            @NextX:
+                sta PPUDATA
+                inx
+                bne @NextX
+            iny
+            cpy #$04
+            bne @NextY
+
+        ; Now clear attributes
+        bit PPUSTATUS
+        lda #$23
+        sta PPUADDR
+        lda #$c0
+        sta PPUADDR
+        lda #$00
+        ldx #$40
+        @NextAttr:
+            sta PPUDATA
+            dex
+            bne @NextAttr
+
+        jsr EnableRendering
+        rts
+
 .endscope

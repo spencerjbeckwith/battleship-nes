@@ -45,6 +45,8 @@
         palette_timer: .res 1
         palette_step: .res 1
         reserved: .res 6 ; used for bankswitch magic
+        EVENT_COUNT = $04
+        events: .res (4 * EVENT_COUNT) ; 4 bytes per event, capacity of 4
 
     .org $0700
         ; Reserve a page for queued writes to the PPU
